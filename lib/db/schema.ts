@@ -398,6 +398,7 @@ export type NewJob = typeof jobs.$inferInsert;
 export type Analysis = typeof analyses.$inferSelect;
 export type NewAnalysis = typeof analyses.$inferInsert;
 export type Application = typeof applications.$inferSelect;
+export type NewApplication = typeof applications.$inferInsert;
 export type Batch = typeof batches.$inferSelect;
 export type BatchJob = typeof batchJobs.$inferSelect;
 export type Artifact = typeof artifacts.$inferSelect;
