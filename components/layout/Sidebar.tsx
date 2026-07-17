@@ -19,6 +19,17 @@ type Props = {
   defaultProvider?: string | null;
 };
 
+/**
+ * The design's decorative "session 4f2a" tag. Must be derived, not random:
+ * the previous version rendered "ssr0" on the server and Math.random() on the
+ * client, which mismatched on every hydration.
+ */
+function sessionTag(seed?: string): string {
+  let h = 0;
+  for (const ch of seed ?? "anon") h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return (h & 0xffff).toString(16).padStart(4, "0");
+}
+
 export function Sidebar({ active, user, configuredProviders = [], defaultProvider }: Props) {
   return (
     <aside className="bg-bg-1 border-line flex w-[200px] shrink-0 flex-col border-r">
@@ -32,8 +43,7 @@ export function Sidebar({ active, user, configuredProviders = [], defaultProvide
           </span>
         </Link>
         <div className="text-fg-3 mt-2 text-[10px] tracking-[0.12em] uppercase">
-          v0.1.0 · session{" "}
-          <span className="text-fg-2">{(typeof window === "undefined" ? "ssr0" : Math.floor(Math.random() * 0xffff).toString(16)).padStart(4, "0")}</span>
+          v0.1.0 · session <span className="text-fg-2">{sessionTag(user?.name)}</span>
         </div>
       </div>
 

@@ -3,12 +3,14 @@
  * JD textarea on the left, streaming console + queue on the right.
  * Phase 7/8 wires real `streamText` and resumable batches.
  */
+import { requireSession } from "@/lib/auth/guard";
 import { Shell } from "@/components/layout/Shell";
 import { Card, CardSectionHeader } from "@/components/primitives/Card";
 import { Button } from "@/components/primitives/Button";
 import { Label } from "@/components/primitives/Label";
 import { Input, Textarea } from "@/components/primitives/Input";
 import { AnalysisConsole } from "@/components/console/AnalysisConsole";
+import { listConfiguredProviders } from "@/lib/ai/provider";
 
 const SAMPLE_JD = `Stripe is hiring Software Engineer III on the Payments Reliability team.
 
@@ -24,7 +26,12 @@ Requirements:
 • Experience designing public APIs at scale
 • Bonus: payments / financial-systems background`;
 
-export default function JobsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function JobsPage() {
+  const s = await requireSession();
+  const providers = await listConfiguredProviders(s.userId);
+
   const queue = [
     { co: "Linear", role: "Staff Frontend Engineer", state: "done" as const, pct: 100, fit: 92 },
     { co: "Notion", role: "Senior Full-Stack (AI)", state: "done" as const, pct: 100, fit: 87 },
@@ -38,8 +45,8 @@ export default function JobsPage() {
     <Shell
       active="jobs"
       crumbs={["autoapply", "jobs", "batch · 6 postings"]}
-      user={{ name: "JOHN SMITH", resumeMeta: "resume.v3 · 2 KB" }}
-      configuredProviders={["claude-3.5", "gemini-2.0", "gpt-4o", "llm council"]}
+      user={{ name: s.name.toUpperCase() }}
+      configuredProviders={providers.map((p) => String(p.provider))}
       defaultProvider="claude-3.5"
     >
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_1fr]">

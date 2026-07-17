@@ -5,25 +5,12 @@
  * Do not import this from production server paths. Demo + tests only.
  */
 
-export type MockSkill = { skill: string; cand: number; req: number };
+import type { JobView, SkillView } from "@/lib/data/view";
 
-export type MockJob = {
-  id: string;
-  jobTitle: string;
-  company: string;
-  location: string;
-  salaryRange: string;
-  salaryUSD: number;
-  salaryINR: number;
-  fitScore: number;
-  fitDelta: number;
-  tags: string[];
-  matchReasoning: string;
-  skills: MockSkill[];
-  gaps: string[];
-  appliedAt: string | null;
-  coverLetter?: string;
-};
+// The fixtures conform to the real render shape, not the other way round.
+// If a DB column changes, these stop type-checking — which is the point.
+export type MockSkill = SkillView;
+export type MockJob = JobView;
 
 export const MOCK_JOBS: MockJob[] = [
   {
@@ -47,7 +34,7 @@ export const MOCK_JOBS: MockJob[] = [
       { skill: "Testing", cand: 65, req: 80 },
       { skill: "Leadership", cand: 78, req: 85 },
     ],
-    gaps: ["Visual regression testing", "Storybook ownership"],
+    gaps: [{ label: "Visual regression testing", weeksToClose: 3 }, { label: "Storybook ownership", weeksToClose: 2 }],
     appliedAt: null,
     coverLetter: `Hi Linear team,
 
@@ -78,7 +65,7 @@ Happy to walk through the dashboard rebuild and how I'd tackle Linear's next-gen
       { skill: "Postgres", cand: 78, req: 80 },
       { skill: "Block model", cand: 30, req: 70 },
     ],
-    gaps: ["Block-based document architecture", "Realtime CRDT"],
+    gaps: [{ label: "Block-based document architecture", weeksToClose: 3 }, { label: "Realtime CRDT", weeksToClose: 2 }],
     appliedAt: null,
   },
   {
@@ -102,7 +89,7 @@ Happy to walk through the dashboard rebuild and how I'd tackle Linear's next-gen
       { skill: "Perf", cand: 80, req: 80 },
       { skill: "Testing", cand: 65, req: 70 },
     ],
-    gaps: ["Edge runtime patterns", "ISR architectures"],
+    gaps: [{ label: "Edge runtime patterns", weeksToClose: 3 }, { label: "ISR architectures", weeksToClose: 2 }],
     appliedAt: "2026-04-22",
   },
   {
@@ -126,7 +113,7 @@ Happy to walk through the dashboard rebuild and how I'd tackle Linear's next-gen
       { skill: "Postgres", cand: 78, req: 80 },
       { skill: "API design", cand: 82, req: 85 },
     ],
-    gaps: ["Ruby fluency", "Payments / financial systems domain"],
+    gaps: [{ label: "Ruby fluency", weeksToClose: 3 }, { label: "Payments / financial systems domain", weeksToClose: 2 }],
     appliedAt: null,
   },
   {
@@ -150,7 +137,7 @@ Happy to walk through the dashboard rebuild and how I'd tackle Linear's next-gen
       { skill: "Docker/K8s", cand: 80, req: 80 },
       { skill: "API design", cand: 82, req: 80 },
     ],
-    gaps: ["Production Go", "Realtime replication patterns"],
+    gaps: [{ label: "Production Go", weeksToClose: 3 }, { label: "Realtime replication patterns", weeksToClose: 2 }],
     appliedAt: null,
   },
   {
@@ -174,7 +161,7 @@ Happy to walk through the dashboard rebuild and how I'd tackle Linear's next-gen
       { skill: "Perf", cand: 80, req: 80 },
       { skill: "Testing", cand: 65, req: 70 },
     ],
-    gaps: ["Swift / native macOS", "AppKit fluency"],
+    gaps: [{ label: "Swift / native macOS", weeksToClose: 3 }, { label: "AppKit fluency", weeksToClose: 2 }],
     appliedAt: null,
   },
 ];

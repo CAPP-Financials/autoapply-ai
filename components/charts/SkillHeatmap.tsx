@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { MockJob } from "@/lib/data/mock";
+import type { JobView } from "@/lib/data/view";
 
 const SKILLS = [
   "React",
@@ -38,8 +38,8 @@ function bgFor(diff: number): string {
  * Candidate-vs-required heatmap. Diff colored by the same signal palette
  * as the fit score; +10 → exceeds, -25 → major gap.
  */
-export function SkillHeatmap({ jobs }: { jobs: MockJob[] }) {
-  const requiredFor = (job: MockJob) => {
+export function SkillHeatmap({ jobs }: { jobs: JobView[] }) {
+  const requiredFor = (job: JobView) => {
     const map: Record<string, number> = {};
     for (const s of job.skills) map[s.skill] = s.req;
     return SKILLS.map((sk) => (sk in map ? map[sk] : null));

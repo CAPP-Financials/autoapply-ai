@@ -1,4 +1,4 @@
-import { desc, eq, and, inArray } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { analyses, jobs, type Analysis, type NewAnalysis } from "@/lib/db/schema";
 import type { UserId } from "@/lib/auth/guard";

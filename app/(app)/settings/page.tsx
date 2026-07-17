@@ -2,18 +2,22 @@
  * Settings — Profile · Providers (BYO key) · Display · Privacy · Danger.
  * Phase 12 wiring: BYO-key form actually saves through /api/settings/providers.
  */
+import { requireSession } from "@/lib/auth/guard";
 import { Shell } from "@/components/layout/Shell";
 import { Card } from "@/components/primitives/Card";
 import { Label } from "@/components/primitives/Label";
 import { ProvidersTab } from "@/components/settings/ProvidersTab";
 import { PROVIDERS } from "@/lib/ai/provider";
 
-export default function SettingsPage() {
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const s = await requireSession();
   return (
     <Shell
       active="settings"
       crumbs={["autoapply", "settings", "providers"]}
-      user={{ name: "JOHN SMITH", resumeMeta: "resume.v3 · 2 KB" }}
+      user={{ name: s.name.toUpperCase() }}
     >
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[200px_1fr]">
         <nav className="flex flex-col gap-1">

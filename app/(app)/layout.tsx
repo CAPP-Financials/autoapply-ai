@@ -1,12 +1,19 @@
 /**
  * Authenticated app shell.
  *
- * Until Phase 3 (Better Auth) lands, this layout renders an unauth-friendly
- * shell using fixture user data so the screens stay reachable end-to-end.
- * Phase 3 swaps the mock user for `await getSession()` and adds a redirect.
+ * This check is defense-in-depth, NOT the protection boundary. Layouts don't
+ * re-execute on every client navigation, so a page that relies solely on this
+ * can leak. Each page calls requireSession() itself — it needs the userId to
+ * scope its query anyway, so the auth gate and the query parameter are the
+ * same call.
+ *
+ * The real gate order is: proxy.ts (cheap cookie check) → this → per-page
+ * requireSession() → per-query `where userId = ...`.
  */
 import type { ReactNode } from "react";
+import { requireSession } from "@/lib/auth/guard";
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default async function AppLayout({ children }: { children: ReactNode }) {
+  await requireSession();
   return <>{children}</>;
 }

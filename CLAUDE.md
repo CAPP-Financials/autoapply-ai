@@ -30,5 +30,4 @@ This is a production build of a resume × job-description AI analyzer. The full 
 
 ## Reference
 
-- Plan file: `~/.claude/plans/fetch-this-design-file-dapper-dijkstra.md`
-- Original design bundle: `C:/Users/193pu/AppData/Local/Temp/design_extracted/autoapply-ai/`
+See `PROJECT_AUDIT.md` at workspace root for full project notes.

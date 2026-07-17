@@ -28,6 +28,12 @@ const ServerSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().email().default("noreply@autoapply.ai"),
   SENTRY_DSN: z.string().url().optional(),
+  // Auth gate. Defaults to ON: an unset/typo'd value must fail closed, never
+  // leave the (app) tree public. Set to "0" only for local unauthed browsing.
+  ENABLE_AUTH: z
+    .enum(["0", "1"])
+    .default("1")
+    .catch("1"),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error", "fatal"]).default("info"),
 });

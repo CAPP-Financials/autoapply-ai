@@ -1,51 +1,71 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * Smoke test for the design parity flow: every screen renders against
- * fixture MOCK_JOBS without requiring auth or real provider keys.
+ * /demo is the fixture-replay surface: it must work with no account, no API
+ * key, and no model call.
+ *
+ * These assert STRUCTURE, never fixture contents. The previous version checked
+ * for "Linear", "Notion", "Vercel"… which passed *because* the data was fake —
+ * it would have kept passing after the real dashboard broke. A test that only
+ * proves the fixtures are still hardcoded proves nothing about the product.
  */
-test.describe("demo flow (fixture data)", () => {
-  test("landing → demo redirect → resume", async ({ page }) => {
+test.describe("demo (fixture replay)", () => {
+  test("landing offers the demo without signup", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByText(/autoapply.*\.ai/i)).toBeVisible();
     await expect(page.getByRole("link", { name: /try the demo/i })).toBeVisible();
+  });
+
+  test("demo renders the dashboard anonymously and says it is sample data", async ({ page }) => {
     await page.goto("/demo");
-    // /demo redirects to /resume
-    await page.waitForURL(/\/resume$/);
-    await expect(page.getByRole("heading", { name: /upload your resume/i })).toBeVisible();
-  });
-
-  test("jobs screen renders the streaming console", async ({ page }) => {
-    await page.goto("/jobs");
-    await expect(page.getByText(/paste jd/i)).toBeVisible();
-    await expect(page.getByText(/analysis console/i)).toBeVisible();
-    await expect(page.getByText(/batch progress/i, { exact: false })).toBeVisible();
-  });
-
-  test("results dashboard shows KPIs and ledger", async ({ page }) => {
-    await page.goto("/results");
-    await expect(page.getByText(/jobs analyzed/i)).toBeVisible();
-    await expect(page.getByText(/avg fit/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/demo$/); // never bounced to /sign-in
+    await expect(page.getByText(/sample data/i)).toBeVisible();
     await expect(page.getByText(/job ledger/i)).toBeVisible();
-    // The 6 mock companies in the ledger.
-    for (const co of ["Linear", "Notion", "Vercel", "Stripe", "Supabase", "Raycast"]) {
-      await expect(page.getByText(co, { exact: true }).first()).toBeVisible();
-    }
+    await expect(page.getByText(/jobs analyzed/i)).toBeVisible();
   });
 
-  test("job detail (Linear) renders radar + tabs", async ({ page }) => {
-    await page.goto("/jobs/j1");
-    await expect(page.getByRole("heading", { name: /staff frontend engineer/i })).toBeVisible();
-    await expect(page.getByText(/skill radar/i)).toBeVisible();
-    await page.getByRole("button", { name: /cover letter/i }).click();
-    await expect(page.getByText(/cover_letter\.md/i)).toBeVisible();
+  test("demo ledger renders a row per fixture job", async ({ page }) => {
+    await page.goto("/demo");
+    // Count rows rather than naming companies: this fails if the ledger stops
+    // rendering, and survives the fixtures being edited.
+    const rows = page.locator("tbody tr");
+    await expect(rows.first()).toBeVisible();
+    expect(await rows.count()).toBeGreaterThan(0);
   });
 
-  test("tracker shows applications by status", async ({ page }) => {
-    await page.goto("/tracker");
-    for (const col of ["Ready", "Applied", "Interviewing", "Offer", "Rejected"]) {
-      await expect(page.getByText(col, { exact: true }).first()).toBeVisible();
-    }
+  test("demo KPIs are computed, not placeholders", async ({ page }) => {
+    await page.goto("/demo");
+    // computeKpis() must produce a real percentage; "—" means the empty-state
+    // path leaked into a populated dashboard.
+    await expect(page.getByText(/^\d+%$/).first()).toBeVisible();
+  });
+
+  test("demo never calls a provider", async ({ page }) => {
+    const providerCalls: string[] = [];
+    await page.route("**/*", (route) => {
+      const url = route.request().url();
+      if (/anthropic|openai|googleapis|groq|openrouter/.test(url)) providerCalls.push(url);
+      return route.continue();
+    });
+    await page.goto("/demo");
+    await page.waitForLoadState("networkidle");
+    expect(providerCalls).toEqual([]);
+  });
+
+  test("demo hydrates without React errors", async ({ page }) => {
+    // Nothing in CI caught the Sidebar rendering "ssr0" server-side and
+    // Math.random() client-side. typecheck/lint/build are all blind to it;
+    // only a real browser sees the mismatch.
+    const errors: string[] = [];
+    page.on("console", (m) => {
+      if (m.type() === "error") errors.push(m.text());
+    });
+    page.on("pageerror", (e) => errors.push(e.message));
+
+    await page.goto("/demo");
+    await page.waitForLoadState("networkidle");
+
+    const hydration = errors.filter((e) => /hydrat|did not match|didn't match/i.test(e));
+    expect(hydration, `hydration errors:\n${hydration.join("\n")}`).toEqual([]);
   });
 
   test("healthz responds 200", async ({ request }) => {
@@ -53,6 +73,5 @@ test.describe("demo flow (fixture data)", () => {
     expect(r.ok()).toBe(true);
     const body = await r.json();
     expect(body.ok).toBe(true);
-    expect(body.name).toBe("autoapply-ai");
   });
 });

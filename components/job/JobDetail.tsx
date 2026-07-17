@@ -9,7 +9,7 @@ import { Textarea } from "@/components/primitives/Input";
 import { FitRing } from "@/components/fit/FitRing";
 import { SkillRadar } from "@/components/fit/SkillRadar";
 import { CompPositioning } from "@/components/charts/CompPositioning";
-import type { MockJob } from "@/lib/data/mock";
+import type { JobView } from "@/lib/data/view";
 
 type Tab = "overview" | "letter" | "ats" | "interview";
 
@@ -20,7 +20,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "interview", label: "Interview Notes" },
 ];
 
-export function JobDetail({ job, provider }: { job: MockJob; provider: string }) {
+export function JobDetail({ job, provider }: { job: JobView; provider: string }) {
   const [tab, setTab] = useState<Tab>("overview");
   const [notes, setNotes] = useState(
     "Phone screen with Karri felt strong on technical depth. They pushed on design-system governance — could go deeper. Next round: take-home (graph view).",
@@ -91,14 +91,16 @@ export function JobDetail({ job, provider }: { job: MockJob; provider: string })
               <Label className="mb-2.5 block">skill gaps · ranked by impact</Label>
               {job.gaps.map((g, i) => (
                 <div
-                  key={g}
+                  key={g.label}
                   className={`grid grid-cols-[24px_1fr_100px] items-center gap-2.5 py-2 ${
                     i ? "border-line-soft border-t" : ""
                   }`}
                 >
                   <span className="text-accent font-bold">{`0${i + 1}`}</span>
-                  <span className="text-fg-1">{g}</span>
-                  <span className="text-fg-3 text-right text-[11px]">~{[3, 2][i] || 2}w to close</span>
+                  <span className="text-fg-1">{g.label}</span>
+                  <span className="text-fg-3 text-right text-[11px]">
+                    ~{g.weeksToClose}w to close
+                  </span>
                 </div>
               ))}
             </Card>

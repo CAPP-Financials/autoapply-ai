@@ -20,5 +20,8 @@ export default defineConfig({
     url: baseURL,
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,
+    // Deliberately does NOT set ENABLE_AUTH. The auth suite asserts that the
+    // *default* configuration is closed — setting it here would test the
+    // fixed config and let the real bug (default-open) pass unnoticed.
   },
 });

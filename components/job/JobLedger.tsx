@@ -6,11 +6,11 @@ import { Card, CardSectionHeader } from "@/components/primitives/Card";
 import type { CurrencyMode } from "@/lib/currency";
 import { fmtMoney } from "@/lib/currency";
 import { fitColor } from "@/lib/fit";
-import type { MockJob } from "@/lib/data/mock";
+import type { JobView } from "@/lib/data/view";
 
 type Sort = "fit" | "salary" | "delta";
 
-export function JobLedger({ jobs, currency }: { jobs: MockJob[]; currency: CurrencyMode }) {
+export function JobLedger({ jobs, currency }: { jobs: JobView[]; currency: CurrencyMode }) {
   const [sortBy, setSortBy] = useState<Sort>("fit");
 
   const sorted = useMemo(() => {

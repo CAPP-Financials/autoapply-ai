@@ -1,11 +1,17 @@
 /**
- * Tracker (kanban) — Phase 13.
- * Stub: lists applications by status. Drag-to-update lands later.
+ * Tracker (kanban) — live.
+ *
+ * Buckets by the real `applications.status` enum instead of the old fixture
+ * heuristic (which inferred "applied" from a non-null appliedAt and left the
+ * other three columns permanently empty).
  */
+import { requireSession } from "@/lib/auth/guard";
 import { Shell } from "@/components/layout/Shell";
 import { Card } from "@/components/primitives/Card";
 import { Label } from "@/components/primitives/Label";
-import { MOCK_JOBS } from "@/lib/data/mock";
+import { listApplicationsForUser } from "@/lib/db/queries/application";
+
+export const dynamic = "force-dynamic";
 
 const COLUMNS = [
   { id: "ready", label: "Ready" },
@@ -15,26 +21,38 @@ const COLUMNS = [
   { id: "rejected", label: "Rejected" },
 ] as const;
 
-export default function TrackerPage() {
-  // Naive bucket assignment for the demo.
-  const applied = MOCK_JOBS.filter((j) => j.appliedAt);
-  const ready = MOCK_JOBS.filter((j) => !j.appliedAt);
+type ColumnId = (typeof COLUMNS)[number]["id"];
 
-  const buckets: Record<(typeof COLUMNS)[number]["id"], typeof MOCK_JOBS> = {
-    ready,
-    applied,
+type Entry = { id: string; company: string; role: string; fitScore: number };
+
+export default async function TrackerPage() {
+  const s = await requireSession();
+  const rows = await listApplicationsForUser(s.userId);
+
+  const buckets: Record<ColumnId, Entry[]> = {
+    ready: [],
+    applied: [],
     interviewing: [],
     offer: [],
     rejected: [],
   };
 
+  for (const r of rows) {
+    const col = r.app.status as ColumnId;
+    if (!(col in buckets)) continue; // tolerate an enum value the UI predates
+    buckets[col].push({
+      id: r.app.id,
+      company: r.company,
+      role: r.role,
+      fitScore: r.analysis.fitScore,
+    });
+  }
+
   return (
     <Shell
       active="tracker"
-      crumbs={["autoapply", "tracker", "applications"]}
-      user={{ name: "JOHN SMITH", resumeMeta: "resume.v3 · 2 KB" }}
-      configuredProviders={["claude-3.5", "gemini-2.0", "gpt-4o", "llm council"]}
-      defaultProvider="claude-3.5"
+      crumbs={["autoapply", "tracker", `${rows.length} application${rows.length === 1 ? "" : "s"}`]}
+      user={{ name: s.name.toUpperCase() }}
     >
       <div className="grid grid-cols-1 gap-3 md:grid-cols-5">
         {COLUMNS.map((col) => (
@@ -50,7 +68,7 @@ export default function TrackerPage() {
               {buckets[col.id].map((j) => (
                 <div key={j.id} className="bg-bg-2 border-line-soft border p-2.5 text-[12px]">
                   <Label>{j.company}</Label>
-                  <div className="mt-1 font-semibold">{j.jobTitle}</div>
+                  <div className="mt-1 font-semibold">{j.role}</div>
                   <div className="text-fg-3 mt-1 text-[10px]">fit {j.fitScore}%</div>
                 </div>
               ))}

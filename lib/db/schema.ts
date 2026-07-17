@@ -36,10 +36,9 @@ const bytea = customType<{ data: Uint8Array; driverData: Buffer }>({
 });
 
 const id = () => uuid("id").primaryKey().defaultRandom();
-const userId = () =>
-  uuid("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" });
+// No userId() helper on purpose: Better Auth issues *text* ids, so every
+// user_id column is text(). A uuid() helper here would look reusable and
+// silently mismatch the FK it points at.
 
 const createdAt = timestamp("created_at", { withTimezone: true })
   .notNull()

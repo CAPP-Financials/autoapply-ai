@@ -12,9 +12,27 @@ env:
 
 jobs:
   build:
-    name: typecheck · lint · test · build
+    name: typecheck · lint · test · build · e2e
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+
+    # A real Postgres, not a stub URL. lib/crypto.ts delegates encryption to
+    # pgcrypto, so a stub connection meant the BYOK key path was untestable —
+    # and therefore untested.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: autoapply_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -26,11 +44,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      # Stub env so build doesn't fail on missing prod secrets.
-      - name: Generate stub env
+      - name: Generate CI env
         run: |
           cat > .env.local <<'EOF'
-          DATABASE_URL=postgres://stub:stub@localhost:5432/stub
+          DATABASE_URL=postgres://postgres:postgres@localhost:5432/autoapply_test
           BETTER_AUTH_SECRET=ci-secret-32-bytes-replace-me-please-thanks
           KEY_ENCRYPTION_KEY=ci-keyenc-32-bytes-replace-me-please-now-pls
           BETTER_AUTH_URL=http://localhost:3000
@@ -39,17 +56,84 @@ jobs:
           LOG_LEVEL=warn
           EOF
 
+      - name: Enable pgcrypto + apply migrations
+        run: |
+          psql "$DB" -c 'CREATE EXTENSION IF NOT EXISTS pgcrypto;'
+          pnpm db:migrate
+        env:
+          DB: postgres://postgres:postgres@localhost:5432/autoapply_test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoapply_test
+
       - name: Typecheck
         run: pnpm typecheck
 
       - name: Lint
         run: pnpm lint
 
+      # ── Gate: fixtures must never render in the authenticated app ──
+      # The original bug: every (app) page rendered MOCK_JOBS, so real users
+      # saw someone else's fake data. Blunt on purpose — it cannot be argued
+      # with, and it fails the moment a fixture import creeps back in.
+      # Greps the *import*, not the identifier: fixtures cannot reach this tree
+      # without importing the module, so this is both necessary and sufficient
+      # — and it doesn't false-positive on a comment that mentions MOCK_JOBS.
+      - name: Gate · no fixtures in the app tree
+        run: |
+          if grep -rnE "from ['\"]@/lib/data/mock['\"]" "app/(app)"; then
+            echo "::error::lib/data/mock imported inside app/(app). Fixtures belong in app/demo/** and tests only."
+            exit 1
+          fi
+          echo "OK: app/(app) imports no fixtures"
+
+      # DATABASE_URL is passed explicitly: vitest does not read .env.local, and
+      # tests/unit/crypto.spec.ts hard-fails in CI rather than skip if it's a
+      # stub — the BYOK key path must never be silently unverified.
       - name: Unit tests
         run: pnpm test
+        env:
+          CI: "true"
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoapply_test
+          KEY_ENCRYPTION_KEY: ci-keyenc-32-bytes-replace-me-please-now-pls
 
       - name: Build
         run: pnpm build
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoapply_test
+
+      # ── Gate: user-scoped pages must be dynamic ──
+      # A page that reads `where userId = ...` CANNOT be statically prerendered.
+      # When these went static (○) it was proof they were rendering fixtures —
+      # the build output had been saying so for four commits and nothing read it.
+      - name: Gate · user-scoped routes are dynamic
+        run: |
+          OUT=$(pnpm build 2>&1)
+          FAIL=0
+          for r in "/results" "/tracker" "/resume" "/settings"; do
+            if echo "$OUT" | grep -qE "^[├└┌]\s+○\s+${r}\s*$"; then
+              echo "::error::${r} is statically prerendered — it cannot be user-scoped."
+              FAIL=1
+            fi
+          done
+          exit $FAIL
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoapply_test
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      # The only screen-level tests in the repo. They existed before this and
+      # had never once run in CI.
+      - name: E2E tests
+        run: pnpm test:e2e
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/autoapply_test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
 
   secret-scan:
     name: gitleaks
