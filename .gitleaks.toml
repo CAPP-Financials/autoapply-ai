@@ -1,11 +1,18 @@
 title = "AutoApply.AI gitleaks config"
 
 [allowlist]
-description = "Local stub env with placeholder secrets is safe to commit"
+description = "Placeholder secrets in examples and test fixtures are safe to commit"
 paths = [
   '''\.env\.example$''',
-  '''\.env\.local$''',
   '''README\.md$''',
+]
+# Self-documenting non-secrets: CI stub creds and test fixtures that spell out
+# they aren't real. Keeps the full-history scan strict on everything else.
+regexes = [
+  '''not-a-real-key''',
+  '''replace-me''',
+  '''ci-secret''',
+  '''ci-keyenc''',
 ]
 
 [[rules]]

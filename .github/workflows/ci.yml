@@ -142,9 +142,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Full-tree scan via the Docker image, not gitleaks-action's push-diff.
+      # The action computes `<before>^..<after>`, and on a repo's first push
+      # `<before>` is the root commit whose parent doesn't exist — git errors,
+      # and the action treats any git stderr as a failure (exit 1) despite
+      # finding zero leaks. `detect` scans the whole history instead.
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            detect --source=/repo --config=/repo/.gitleaks.toml \
+            --redact --verbose --exit-code=1
 
   codeql:
     name: CodeQL
