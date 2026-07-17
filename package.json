@@ -33,7 +33,7 @@
     "drizzle-orm": "^0.45.2",
     "file-type": "^22.0.1",
     "isomorphic-dompurify": "^3.12.0",
-    "nanoid": "^5.1.11",
+    "nanoid": "^6.0.0",
     "next": "16.2.4",
     "pdfjs-dist": "^5.7.284",
     "pino": "^10.3.1",
