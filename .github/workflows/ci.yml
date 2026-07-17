@@ -155,6 +155,12 @@ jobs:
 
   codeql:
     name: CodeQL
+    # Only runs on a public repo, where code scanning is free. On a private
+    # repo, uploading CodeQL results needs paid GitHub Advanced Security —
+    # which the project's free-tier-only rule forbids — so the job would fail
+    # on "code scanning not enabled". Flips on automatically if the repo is
+    # ever made public. gitleaks + the app's auth/crypto tests still gate.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     permissions:
       security-events: write
