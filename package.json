@@ -24,7 +24,7 @@
     "@ai-sdk/anthropic": "^3.0.74",
     "@ai-sdk/google": "^3.0.67",
     "@ai-sdk/groq": "^3.0.38",
-    "@ai-sdk/openai": "^3.0.58",
+    "@ai-sdk/openai": "^4.0.16",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "@vercel/blob": "^2.3.3",
